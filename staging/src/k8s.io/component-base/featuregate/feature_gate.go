@@ -767,3 +767,24 @@ func (f *featureGate) ResetFeatureValueToDefault(name Feature) error {
 	f.enabledRaw.Store(enabledRaw)
 	return nil
 }
+
+// VersionedFeature defines the stability of a feature in Kubernetes releases is greater than or equal to the given one.
+type VersionedFeature struct {
+	// Version of Kubernetes since which the feature has the given stability.
+	Version *version.Version
+	// The feature being versioned.
+	Feature Feature
+}
+
+// FeatureForVersion returns the feature that should be used for the given version.
+// It iterates through the versioned features from newest to oldest, returning the
+// first feature whose version is less than or equal to the given version.
+// If no matching version is found, returns the default feature.
+func FeatureForVersion(emulatedVersion *version.Version, versionedFeatures []VersionedFeature, defaultFeature Feature) Feature {
+	for i := len(versionedFeatures) - 1; i >= 0; i-- {
+		if emulatedVersion.AtLeast(versionedFeatures[i].Version) {
+			return versionedFeatures[i].Feature
+		}
+	}
+	return defaultFeature
+}
